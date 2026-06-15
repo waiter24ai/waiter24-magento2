@@ -1,0 +1,8 @@
+<?php
+/** @var \Waiter24\Export\Block\Widget $block */
+?>
+<?php if ($block->isEnabled()): ?>
+    <script defer
+            src="<?= $block->escapeUrl($block->getWidgetUrl()) ?>"
+            data-key="<?= $block->escapeHtmlAttr($block->getWidgetKey()) ?>"></script>
+<?php endif; ?>

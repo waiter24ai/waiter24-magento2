@@ -1,0 +1,119 @@
+{
+    "site_config": {
+        "platform_preset": "woocommerce",
+        "cart_integration_enabled": false,
+        "cart_url": "https://example.com/cart",
+        "cart_counter_selector": ".cart-contents .count",
+        "add_button_selector": ".single_add_to_cart_button",
+        "qty_selector": ".quantity input.qty",
+        "variations_container_selector": ".variations",
+        "variation_select_pattern": "select[name=\"attribute_{attribute}\"]",
+        "dom_wait_ms": 500,
+        "after_add_js": "jQuery(document.body).trigger('wc_fragment_refresh')"
+    },
+    "items": [
+        {
+            "external_id": "101",
+            "category": "Pizza",
+            "subcategory": "Classic",
+            "name": "Margherita",
+            "description": "Tomato, mozzarella, basil, olive oil",
+            "price": 220,
+            "sale_price": null,
+            "currency": "USD",
+            "weight": null,
+            "tags": ["Vegetarian"],
+            "photo_url": "https://example.com/img/margherita.jpg",
+            "product_url": "https://example.com/product/margherita",
+            "variation_values": null,
+            "variations": [
+                {"name": "20cm", "price": 220, "values": {"size": "20cm"}},
+                {"name": "30cm", "price": 320, "sale_price": 280, "values": {"size": "30cm"}},
+                {"name": "40cm", "price": 420, "values": {"size": "40cm"}}
+            ],
+            "is_available": true,
+            "sort_order": 1
+        },
+        {
+            "external_id": "102",
+            "category": "Pizza",
+            "subcategory": "Classic",
+            "name": "Pepperoni",
+            "description": "Tomato, mozzarella, pepperoni",
+            "price": 260,
+            "currency": "USD",
+            "weight": null,
+            "tags": ["Spicy"],
+            "photo_url": null,
+            "product_url": "https://example.com/product/pepperoni",
+            "variations": [
+                {"name": "30cm", "price": 380, "values": {"size": "30cm"}},
+                {"name": "40cm", "price": 480, "values": {"size": "40cm"}}
+            ],
+            "is_available": true,
+            "sort_order": 2
+        },
+        {
+            "external_id": "103",
+            "category": "Pizza",
+            "subcategory": "Vegan",
+            "name": "Vegan Deluxe 30cm",
+            "description": "Vegan cheese, mushrooms, bell pepper, tomatoes",
+            "price": 360,
+            "sale_price": 299,
+            "currency": "USD",
+            "weight": "520g",
+            "tags": ["Vegan", "Lactose-free", "Sale"],
+            "photo_url": null,
+            "product_url": "https://example.com/product/vegan-deluxe",
+            "variation_values": {"size": "30cm"},
+            "variations": null,
+            "is_available": true,
+            "sort_order": 1
+        },
+        {
+            "external_id": "201",
+            "category": "Drinks",
+            "subcategory": "Carbonated",
+            "name": "Coca-Cola 0.5L",
+            "description": null,
+            "price": 50,
+            "currency": "USD",
+            "weight": "500ml",
+            "tags": [],
+            "photo_url": null,
+            "product_url": null,
+            "is_available": true,
+            "sort_order": 1
+        },
+        {
+            "external_id": "202",
+            "category": "Drinks",
+            "subcategory": "Fresh-squeezed",
+            "name": "Fresh orange juice",
+            "description": "Freshly squeezed oranges",
+            "price": 110,
+            "currency": "USD",
+            "tags": [],
+            "variations": [
+                {"name": "0.3L", "price": 110},
+                {"name": "0.5L", "price": 160, "sale_price": 140}
+            ],
+            "is_available": true,
+            "sort_order": 1
+        },
+        {
+            "external_id": "301",
+            "category": "Desserts",
+            "subcategory": null,
+            "name": "Tiramisu",
+            "description": "Classic Italian dessert with mascarpone",
+            "price": 180,
+            "currency": "USD",
+            "weight": "150g",
+            "tags": ["Non-alcoholic"],
+            "is_available": true,
+            "sort_order": 1
+        }
+    ]
+}

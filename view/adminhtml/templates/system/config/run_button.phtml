@@ -1,0 +1,30 @@
+<?php
+/** @var \Waiter24\Export\Block\Adminhtml\System\Config\RunButton $block */
+?>
+<div class="waiter24-run-button">
+    <?= $block->getButtonHtml() ?>
+    <span id="waiter24_export_run_result" style="margin-left:12px;"></span>
+</div>
+<script>
+require(['jquery'], function ($) {
+    $('#waiter24_export_run_button').on('click', function () {
+        var $btn = $(this),
+            $out = $('#waiter24_export_run_result');
+        $btn.prop('disabled', true);
+        $out.text('<?= /* @noEscape */ __('Exporting…') ?>').css('color', '#777');
+
+        $.ajax({
+            url: '<?= $block->escapeJs($block->getAjaxUrl()) ?>',
+            type: 'GET',
+            dataType: 'json',
+            showLoader: true
+        }).done(function (res) {
+            $out.text(res.message || '').css('color', res.success ? 'green' : 'red');
+        }).fail(function () {
+            $out.text('<?= /* @noEscape */ __('Request failed.') ?>').css('color', 'red');
+        }).always(function () {
+            $btn.prop('disabled', false);
+        });
+    });
+});
+</script>

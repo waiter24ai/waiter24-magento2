@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <!-- Daily reconciliation push. Real-time updates come from product saves
+             (manual "Export Now" or an observer if enabled); this is the safety net. -->
+        <job name="waiter24_export_menu" instance="Waiter24\Export\Cron\Export" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+    </group>
+</config>

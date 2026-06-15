@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="waiter24" translate="label" sortOrder="400">
+            <label>Waiter24</label>
+        </tab>
+        <section id="waiter24_export" translate="label" type="text" sortOrder="10"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Menu Export &amp; Chat Widget</label>
+            <tab>waiter24</tab>
+            <resource>Waiter24_Export::config</resource>
+
+            <group id="general" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+
+                <field id="import_token" translate="label comment" type="obscure" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Import Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Secret token from your Waiter24 dashboard (Site Settings → Automatic menu import). Authenticates the menu push.</comment>
+                </field>
+
+                <field id="widget_key" translate="label comment" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Widget Key</label>
+                    <comment>Public key used to load the chat widget on your storefront.</comment>
+                </field>
+
+                <field id="endpoint_url" translate="label comment" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Import Endpoint URL</label>
+                    <comment>Defaults to the Waiter24 import endpoint. Change only if self-hosted.</comment>
+                </field>
+
+                <field id="widget_url" translate="label comment" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Widget Script URL</label>
+                </field>
+            </group>
+
+            <group id="export" translate="label" type="text" sortOrder="20"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Export</label>
+
+                <field id="simple_stock_mode" translate="label comment" type="select" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Simple Stock Mode</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>When enabled, all products are exported as available regardless of real stock.</comment>
+                </field>
+
+                <field id="run_now" translate="label" type="button" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Manual Export</label>
+                    <frontend_model>Waiter24\Export\Block\Adminhtml\System\Config\RunButton</frontend_model>
+                </field>
+            </group>
+
+            <group id="widget" translate="label" type="text" sortOrder="30"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Chat Widget</label>
+
+                <field id="enabled" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Chat Widget</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Inject the Waiter24 chat widget on all storefront pages.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

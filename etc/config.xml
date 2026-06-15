@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <waiter24_export>
+            <general>
+                <endpoint_url>https://waiter24.ai/api/integrations/menu</endpoint_url>
+                <widget_url>https://waiter24.ai/widget.js</widget_url>
+            </general>
+            <export>
+                <simple_stock_mode>1</simple_stock_mode>
+            </export>
+            <widget>
+                <enabled>0</enabled>
+            </widget>
+        </waiter24_export>
+    </default>
+</config>

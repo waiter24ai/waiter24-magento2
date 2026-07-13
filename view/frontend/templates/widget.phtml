@@ -4,5 +4,6 @@
 <?php if ($block->isEnabled()): ?>
     <script defer
             src="<?= $block->escapeUrl($block->getWidgetUrl()) ?>"
-            data-key="<?= $block->escapeHtmlAttr($block->getWidgetKey()) ?>"></script>
+            data-key="<?= $block->escapeHtmlAttr($block->getWidgetKey()) ?>"
+            <?php if ($block->isDemoMode()): ?>data-demo-param="<?= $block->escapeHtmlAttr($block->getDemoParam()) ?>"<?php endif; ?>></script>
 <?php endif; ?>

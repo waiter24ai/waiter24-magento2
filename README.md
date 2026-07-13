@@ -22,6 +22,13 @@ schema (see [`examples/menu-import-sample.json`](examples/menu-import-sample.jso
 - **Widget**: a frontend block injects `widget.js` (with the public widget key)
   before `</body>` on every storefront page when enabled.
 
+## Requirements
+
+- Magento Open Source / Adobe Commerce **2.4.x**
+- PHP **8.1+** (per `composer.json`)
+- Cron configured (the daily export and Magento's own indexers rely on it)
+- Outbound HTTPS from the store to `https://waiter24.ai`
+
 ## Install
 
 Two options.
@@ -34,17 +41,26 @@ Two options.
    ```bash
    bin/magento module:enable Waiter24_Export
    bin/magento setup:upgrade
-   bin/magento setup:di:compile      # production mode only
+   bin/magento setup:di:compile                 # production mode only
+   bin/magento setup:static-content:deploy -f   # production mode only
    bin/magento cache:flush
    ```
 
-### B. Composer (private repo / packaged)
+### B. Composer
+
+The package (`waiter24/module-export`, type `magento2-module`) is **not on public
+Packagist** — it's a private repo. Register it as a VCS source first, then require
+it. From the Magento root:
 
 ```bash
-composer require waiter24/module-export
+composer config repositories.waiter24 vcs git@github.com:waiter24ai/waiter24-magento2.git
+composer require waiter24/module-export:dev-main
 bin/magento module:enable Waiter24_Export
 bin/magento setup:upgrade
 ```
+
+(Composer drops the module into `app/code/Waiter24/Export` via `magento/composer`
+installers — no manual copy needed.)
 
 ## Configure (merchant)
 
@@ -63,6 +79,11 @@ bin/magento setup:upgrade
 Multi-store: set a different Import Token per store view to feed several Waiter24
 tenants from one Magento instance — the cron exports each configured store.
 
+> **Local testing.** `etc/config.xml` defaults the endpoint/widget URLs to the
+> OSPanel dev host (`http://waiter.loc`). Point them at your own Waiter24 instance
+> by editing those defaults or, better, overriding **General → Endpoint URL /
+> Widget URL** per store in the admin. For production use `https://waiter24.ai/…`.
+
 ## Files
 
 ```
@@ -77,6 +98,12 @@ Waiter24/Export/
   view/frontend/{layout/default.xml, templates/widget.phtml}
   view/adminhtml/templates/system/config/run_button.phtml
 ```
+
+## Limitations
+
+- No native "add to cart" push: the export sends `platform_preset = custom`
+  without storefront cart selectors, so the chat assistant recommends items and
+  links to product pages but can't add them to the Magento cart directly.
 
 ## Possible follow-ups
 

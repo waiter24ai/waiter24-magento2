@@ -33,4 +33,17 @@ class Widget extends Template
     {
         return $this->config->getWidgetUrl();
     }
+
+    public function isDemoMode(): bool
+    {
+        return $this->config->isDemoMode();
+    }
+
+    /**
+     * GET parameter that reveals the widget when demo mode is on.
+     */
+    public function getDemoParam(): string
+    {
+        return 'waiter24_demo';
+    }
 }

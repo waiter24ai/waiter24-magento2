@@ -16,7 +16,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Builds the platform-neutral menu JSON from the Magento catalog and pushes it
  * to the Waiter24 import endpoint. Same schema as the WooCommerce plugin and
- * Shopify app (see public/samples/menu-import-sample.json).
+ * Shopify app (see examples/menu-import-sample.json).
  *
  * Magento has hierarchical categories, so parent → category, child → subcategory.
  */

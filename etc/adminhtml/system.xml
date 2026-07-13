@@ -68,6 +68,13 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Inject the Waiter24 chat widget on all storefront pages.</comment>
                 </field>
+
+                <field id="demo_mode" translate="label comment" type="select" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Demo Mode</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[When enabled, the chat stays hidden for regular visitors and appears only on URLs carrying the <strong>waiter24_demo</strong> GET parameter (e.g. <code>https://yourstore.com/?waiter24_demo=1</code>). The parameter is remembered for the browsing session and re-applied to in-chat links, so the chat stays visible while clicking around.]]></comment>
+                </field>
             </group>
         </section>
     </system>

@@ -21,6 +21,18 @@ schema (see [`examples/menu-import-sample.json`](examples/menu-import-sample.jso
   the admin can push anytime with **Export Now**.
 - **Widget**: a frontend block injects `widget.js` (with the public widget key)
   before `</body>` on every storefront page when enabled.
+- **Cart bridge** (`Controller/Cart`): two storefront endpoints implementing the
+  platform-neutral contract the chat widget speaks on every CMS. They act on the
+  visitor's own quote via the session cookie, so add-to-cart from chat works the
+  same on Luma, Hyvä, or any custom theme:
+  - `POST /waiter24/cart/add` — body `{"product_id": "123", "qty": 2}` →
+    `{"success": true}`. `product_id` may be a configurable's child (the
+    variation picked in chat); the simple product is added directly.
+  - `GET /waiter24/cart` — → `{"items": [{"name", "qty", "price"}]}`, read-only,
+    feeds the AI's cart-aware upsell.
+  Both return 404 while **Enable Chat Widget** is off. The export announces them
+  via `site_config` (`platform_preset: magento2`, `ajax_add_url`,
+  `cart_read_url`), so the tenant panel is prefilled automatically.
 
 ## Requirements
 
@@ -91,9 +103,11 @@ Waiter24/Export/
   registration.php, composer.json
   etc/module.xml, acl.xml, config.xml, crontab.xml
   etc/adminhtml/system.xml, routes.xml
+  etc/frontend/routes.xml
   Model/Config.php, Model/MenuExporter.php
   Cron/Export.php
   Controller/Adminhtml/Export/Run.php
+  Controller/Cart/Add.php, Controller/Cart/Index.php
   Block/Widget.php, Block/Adminhtml/System/Config/RunButton.php
   view/frontend/{layout/default.xml, templates/widget.phtml}
   view/adminhtml/templates/system/config/run_button.phtml
@@ -101,9 +115,12 @@ Waiter24/Export/
 
 ## Limitations
 
-- No native "add to cart" push: the export sends `platform_preset = custom`
-  without storefront cart selectors, so the chat assistant recommends items and
-  links to product pages but can't add them to the Magento cart directly.
+- Configurable children added through the bridge appear in the cart as their
+  simple product (name/SKU of the child), not as "parent + selected options" —
+  functionally identical at checkout, just rendered differently.
+- The header mini-cart refresh relies on the widget's after-add snippet
+  (customer-data reload on Luma, `reload-customer-section-data` event on Hyvä);
+  exotic themes may need their own snippet in Site Settings → After-add JavaScript.
 
 ## Possible follow-ups
 

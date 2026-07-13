@@ -92,7 +92,16 @@ class MenuExporter
         }
 
         return [
-            'site_config' => ['platform_preset' => 'custom'],
+            // The module ships the waiter24 cart-bridge endpoints (see
+            // Controller/Cart), so the widget can add to and read the Magento
+            // cart on any theme. Panel-owned keys (cart_integration_enabled,
+            // show_go_to_cart, cart_context_enabled) are deliberately absent.
+            'site_config' => [
+                'platform_preset' => 'magento2',
+                'ajax_add_url'    => '/waiter24/cart/add',
+                'cart_read_url'   => '/waiter24/cart',
+                'cart_url'        => '/checkout/cart/',
+            ],
             'items'       => $items,
         ];
     }
@@ -201,6 +210,9 @@ class MenuExporter
             $variations[] = [
                 'name'  => (string) $child->getName(),
                 'price' => (float) $child->getPrice(),
+                // Lets the widget push the exact child the guest picked through
+                // the cart bridge (POST /waiter24/cart/add).
+                'external_id' => (string) $child->getId(),
             ];
         }
 

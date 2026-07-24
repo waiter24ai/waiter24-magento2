@@ -4,10 +4,10 @@
     <default>
         <waiter24_export>
             <general>
-                <!-- Local testing defaults (OSPanel dev host). For production set these
-                     to https://waiter24.ai/... or just override them per store in the admin. -->
-                <endpoint_url>http://waiter.loc/api/integrations/menu</endpoint_url>
-                <widget_url>http://waiter.loc/widget.js</widget_url>
+                <!-- Production defaults. Override per store in the admin if you run
+                     your own Waiter24 instance. -->
+                <endpoint_url>https://waiter24.ai/api/integrations/menu</endpoint_url>
+                <widget_url>https://waiter24.ai/widget.js</widget_url>
             </general>
             <export>
                 <simple_stock_mode>1</simple_stock_mode>

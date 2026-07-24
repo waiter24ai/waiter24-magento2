@@ -79,7 +79,7 @@ installers — no manual copy needed.)
 **Stores → Configuration → Waiter24 → Menu Export & Chat Widget**
 
 1. **General → Import Token** — paste the secret from your Waiter24 dashboard
-   (Site Settings → Automatic menu import).
+   (Widget Settings → Menu auto-import).
 2. **General → Widget Key** — paste the public widget key (same screen).
 3. **Export → Simple Stock Mode** — leave on to always export products as
    available, or off to respect real stock.
@@ -87,14 +87,20 @@ installers — no manual copy needed.)
    connection. After that the daily cron keeps it in sync.
 5. **Chat Widget → Enable Chat Widget = Yes** to show the assistant on the
    storefront.
+6. *(optional)* **Chat Widget → Demo Mode = Yes** hides the chat from regular
+   visitors — it appears only on URLs carrying `?waiter24_demo=1`. The parameter
+   is remembered for the session and re-applied to in-chat links, so the chat
+   stays visible while clicking around. Useful for showing the assistant to a
+   client before going live.
 
 Multi-store: set a different Import Token per store view to feed several Waiter24
 tenants from one Magento instance — the cron exports each configured store.
 
-> **Local testing.** `etc/config.xml` defaults the endpoint/widget URLs to the
-> OSPanel dev host (`http://waiter.loc`). Point them at your own Waiter24 instance
-> by editing those defaults or, better, overriding **General → Endpoint URL /
-> Widget URL** per store in the admin. For production use `https://waiter24.ai/…`.
+> **URLs.** `etc/config.xml` ships production defaults (`https://waiter24.ai/…`)
+> for the endpoint and widget URLs. To point a store at another Waiter24 instance
+> (e.g. an OSPanel dev host at `http://waiter.loc`), override **General →
+> Endpoint URL / Widget URL** per store in the admin rather than editing the
+> shipped defaults.
 
 ## Files
 

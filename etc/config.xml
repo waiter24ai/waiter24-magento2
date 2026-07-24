@@ -4,6 +4,8 @@
     <default>
         <waiter24_export>
             <general>
+                <!-- Production defaults. Override per store in the admin if you run
+                     your own Waiter24 instance. -->
                 <endpoint_url>https://waiter24.ai/api/integrations/menu</endpoint_url>
                 <widget_url>https://waiter24.ai/widget.js</widget_url>
             </general>
@@ -12,6 +14,7 @@
             </export>
             <widget>
                 <enabled>0</enabled>
+                <demo_mode>0</demo_mode>
             </widget>
         </waiter24_export>
     </default>

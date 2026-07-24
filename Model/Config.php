@@ -59,4 +59,9 @@ class Config
     {
         return $this->flag('widget/enabled', $storeId);
     }
+
+    public function isDemoMode(?int $storeId = null): bool
+    {
+        return $this->flag('widget/demo_mode', $storeId);
+    }
 }

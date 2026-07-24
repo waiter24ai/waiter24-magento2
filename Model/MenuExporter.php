@@ -2,6 +2,7 @@
 
 namespace Waiter24\Export\Model;
 
+use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
@@ -16,7 +17,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Builds the platform-neutral menu JSON from the Magento catalog and pushes it
  * to the Waiter24 import endpoint. Same schema as the WooCommerce plugin and
- * Shopify app (see public/samples/menu-import-sample.json).
+ * Shopify app (see examples/menu-import-sample.json).
  *
  * Magento has hierarchical categories, so parent → category, child → subcategory.
  */
@@ -30,6 +31,7 @@ class MenuExporter
         private readonly Curl $curl,
         private readonly Json $json,
         private readonly LoggerInterface $logger,
+        private readonly ImageHelper $imageHelper,
     ) {}
 
     /**
@@ -92,7 +94,16 @@ class MenuExporter
         }
 
         return [
-            'site_config' => ['platform_preset' => 'custom'],
+            // The module ships the waiter24 cart-bridge endpoints (see
+            // Controller/Cart), so the widget can add to and read the Magento
+            // cart on any theme. Panel-owned keys (cart_integration_enabled,
+            // show_go_to_cart, cart_context_enabled) are deliberately absent.
+            'site_config' => [
+                'platform_preset' => 'magento2',
+                'ajax_add_url'    => '/waiter24/cart/add',
+                'cart_read_url'   => '/waiter24/cart',
+                'cart_url'        => '/checkout/cart/',
+            ],
             'items'       => $items,
         ];
     }
@@ -115,6 +126,29 @@ class MenuExporter
 
         $image     = $product->getImage();
         $photoUrl  = ($image && $image !== 'no_selection') ? $mediaUrl . $image : null;
+
+        // Prefer a resized ~400px thumbnail over the full-size original — the
+        // widget renders dish photos small. Guarded on every side so the export
+        // never breaks or emits a bad URL: an exception, a placeholder (no
+        // /cache/ segment), or a wrong-host URL (the helper uses the current
+        // store, which in an admin/CLI export may differ from $storeId) all fall
+        // back to the original media URL.
+        if ($photoUrl !== null) {
+            try {
+                $thumb = $this->imageHelper
+                    ->init($product, 'product_thumbnail_image')
+                    ->setImageFile($image)
+                    ->resize(400)
+                    ->getUrl();
+                if (is_string($thumb) && $thumb !== ''
+                    && str_contains($thumb, '/cache/')
+                    && parse_url($thumb, PHP_URL_HOST) === parse_url($mediaUrl, PHP_URL_HOST)) {
+                    $photoUrl = $thumb;
+                }
+            } catch (\Throwable $e) {
+                // Keep the original $photoUrl.
+            }
+        }
 
         $available = $simpleStock ? true : $this->isInStock($product);
 
@@ -201,6 +235,9 @@ class MenuExporter
             $variations[] = [
                 'name'  => (string) $child->getName(),
                 'price' => (float) $child->getPrice(),
+                // Lets the widget push the exact child the guest picked through
+                // the cart bridge (POST /waiter24/cart/add).
+                'external_id' => (string) $child->getId(),
             ];
         }
 

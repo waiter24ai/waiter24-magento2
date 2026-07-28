@@ -88,7 +88,7 @@ installers — no manual copy needed.)
 **Stores → Configuration → Waiter24 → Menu Export & Chat Widget**
 
 1. **General → Import Token** — paste the secret from your Waiter24 dashboard
-   (Widget Settings → Menu auto-import).
+   (Site Integration → Menu auto-import).
 2. **General → Widget Key** — paste the public widget key (same screen).
 3. **Export → Simple Stock Mode** — leave on to always export products as
    available, or off to respect real stock.
@@ -137,7 +137,7 @@ Waiter24/Export/
   functionally identical at checkout, just rendered differently.
 - The header mini-cart refresh relies on the widget's after-add snippet
   (customer-data reload on Luma, `reload-customer-section-data` event on Hyvä);
-  exotic themes may need their own snippet in Site Settings → After-add JavaScript.
+  exotic themes may need their own snippet in Site Integration → DOM selectors → After-add JavaScript.
 
 ## Possible follow-ups
 

@@ -1,7 +1,7 @@
 {
     "name": "waiter24/module-export",
     "description": "Export Magento 2 catalog to Waiter24 and embed the AI chat widget",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "type": "magento2-module",
     "license": "proprietary",
     "require": {

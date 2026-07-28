@@ -39,6 +39,12 @@ class MenuExporter
      *
      * @throws LocalizedException when not configured or the push fails.
      */
+    /**
+     * Products per push. A catalogue is sent in slices so that neither this
+     * process nor the import endpoint ever has to hold all of it at once.
+     */
+    private const BATCH_SIZE = 200;
+
     public function run(?int $storeId = null): array
     {
         $token    = $this->config->getImportToken($storeId);
@@ -48,8 +54,56 @@ class MenuExporter
             throw new LocalizedException(__('Waiter24: import token or endpoint URL is not configured.'));
         }
 
-        $payload = $this->build($storeId);
+        // One import session spans every slice: each slice is an upsert, and only
+        // the closing call tells Waiter24 which products the store no longer
+        // sells. An export that dies half way therefore hides nothing — it just
+        // leaves the previous menu in place.
+        $session  = 'mg2' . bin2hex(random_bytes(12));
+        $sent     = 0;
+        $page     = 1;
+        $response = ['ok' => true];
 
+        do {
+            $slice = $this->buildSlice($storeId, $page, self::BATCH_SIZE);
+
+            $payload = [
+                'items'          => $slice['items'],
+                'import_session' => $session,
+                'chunk'          => $page,
+            ];
+
+            // The store's selectors and endpoints do not change between slices,
+            // so they ride the first one.
+            if ($page === 1) {
+                $payload['site_config'] = $this->siteConfig();
+            }
+
+            $response = $this->push($endpoint, $token, $payload);
+
+            $sent += count($slice['items']);
+            ++$page;
+        } while ($slice['has_more']);
+
+        if ($sent === 0) {
+            throw new LocalizedException(__('Waiter24: no visible products to export.'));
+        }
+
+        return $this->push($endpoint, $token, [
+            'items'          => [],
+            'import_session' => $session,
+            'final'          => true,
+        ]);
+    }
+
+    /**
+     * POST one payload to the import endpoint.
+     *
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     * @throws LocalizedException
+     */
+    private function push(string $endpoint, string $token, array $payload): array
+    {
         $this->curl->addHeader('Authorization', 'Bearer ' . $token);
         $this->curl->addHeader('Content-Type', 'application/json');
         $this->curl->setOption(CURLOPT_TIMEOUT, 30);
@@ -71,9 +125,39 @@ class MenuExporter
     }
 
     /**
+     * The whole catalogue in one array. Kept for callers that want it (and for
+     * small stores); `run()` goes slice by slice instead.
+     *
      * @return array{site_config: array<string,mixed>, items: array<int,array<string,mixed>>}
      */
     public function build(?int $storeId = null): array
+    {
+        $items = [];
+        $page  = 1;
+
+        do {
+            $slice = $this->buildSlice($storeId, $page, self::BATCH_SIZE);
+            $items = array_merge($items, $slice['items']);
+            ++$page;
+        } while ($slice['has_more']);
+
+        return [
+            'site_config' => $this->siteConfig(),
+            'items'       => $items,
+        ];
+    }
+
+    /**
+     * One page of the catalogue.
+     *
+     * Only products a shopper can actually reach are exported: enabled, and not
+     * "Not Visible Individually" — that last one is what configurable variants
+     * are set to, and the assistant must not offer a product whose page does not
+     * exist. `addStoreFilter()` keeps the export to the store view being pushed.
+     *
+     * @return array{items: array<int,array<string,mixed>>, has_more: bool}
+     */
+    private function buildSlice(?int $storeId, int $page, int $pageSize): array
     {
         $simpleStock = $this->config->isSimpleStockMode($storeId);
         $currency    = $this->storeManager->getStore($storeId)->getCurrentCurrencyCode();
@@ -84,27 +168,42 @@ class MenuExporter
         $collection->addAttributeToSelect(['name', 'description', 'short_description', 'price', 'special_price', 'image', 'status'])
             ->addAttributeToFilter('status', Product::STATUS_ENABLED)
             ->setVisibility([Visibility::VISIBILITY_BOTH, Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_IN_SEARCH])
-            ->addStoreFilter($storeId);
+            ->addStoreFilter($storeId)
+            // Ordered by a unique key: paging over a non-unique one can shuffle
+            // ties between queries and skip a product, and a product no slice
+            // ever sent would be hidden when the session closes.
+            ->setOrder('entity_id', 'ASC')
+            ->setPageSize($pageSize)
+            ->setCurPage($page);
 
         $items = [];
-        $sort  = 0;
+        $sort  = ($page - 1) * $pageSize;
 
         foreach ($collection as $product) {
             $items[] = $this->mapProduct($product, ++$sort, $currency, $mediaUrl, $simpleStock);
         }
 
         return [
-            // The module ships the waiter24 cart-bridge endpoints (see
-            // Controller/Cart), so the widget can add to and read the Magento
-            // cart on any theme. Panel-owned keys (cart_integration_enabled,
-            // show_go_to_cart, cart_context_enabled) are deliberately absent.
-            'site_config' => [
-                'platform_preset' => 'magento2',
-                'ajax_add_url'    => '/waiter24/cart/add',
-                'cart_read_url'   => '/waiter24/cart',
-                'cart_url'        => '/checkout/cart/',
-            ],
-            'items'       => $items,
+            'items'    => $items,
+            'has_more' => $page < $collection->getLastPageNumber(),
+        ];
+    }
+
+    /**
+     * The module ships the waiter24 cart-bridge endpoints (see Controller/Cart),
+     * so the widget can add to and read the Magento cart on any theme.
+     * Panel-owned keys (cart_integration_enabled, show_go_to_cart,
+     * cart_context_enabled) are deliberately absent.
+     *
+     * @return array<string,mixed>
+     */
+    private function siteConfig(): array
+    {
+        return [
+            'platform_preset' => 'magento2',
+            'ajax_add_url'    => '/waiter24/cart/add',
+            'cart_read_url'   => '/waiter24/cart',
+            'cart_url'        => '/checkout/cart/',
         ];
     }
 

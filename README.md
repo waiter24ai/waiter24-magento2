@@ -17,10 +17,19 @@ schema (see [`examples/menu-import-sample.json`](examples/menu-import-sample.jso
   products map directly; configurable products expose their children as
   `variations`. `special_price` below `price` becomes `sale_price`. Stock drives
   `is_available` (unless Simple Stock Mode is on).
-- **Sync**: a daily cron (`waiter24_export_menu`, 03:00) pushes the full catalog;
-  the admin can push anytime with **Export Now**.
+- **What is exported**: enabled products that are visible individually
+  (`VISIBILITY_BOTH | IN_CATALOG | IN_SEARCH`) in the store view being pushed.
+  Configurable variants carry "Not Visible Individually", so they are excluded —
+  the assistant must not offer a product whose page does not exist.
+- **Sync**: a daily cron (`waiter24_export_menu`, 03:00) pushes the catalog; the
+  admin can push anytime with **Export Now**. The catalogue goes out in slices of
+  200 products that share one `import_session`, ending with a `final` call —
+  neither side holds the whole catalogue, and only that closing call hides what
+  the store no longer sells, so an export that dies half way leaves the previous
+  menu alone.
 - **Widget**: a frontend block injects `widget.js` (with the public widget key)
-  before `</body>` on every storefront page when enabled.
+  before `</body>` on every storefront page when enabled — except in Demo Mode,
+  where the tag is rendered only on requests carrying `?waiter24_demo=1`.
 - **Cart bridge** (`Controller/Cart`): two storefront endpoints implementing the
   platform-neutral contract the chat widget speaks on every CMS. They act on the
   visitor's own quote via the session cookie, so add-to-cart from chat works the
@@ -88,10 +97,12 @@ installers — no manual copy needed.)
 5. **Chat Widget → Enable Chat Widget = Yes** to show the assistant on the
    storefront.
 6. *(optional)* **Chat Widget → Demo Mode = Yes** hides the chat from regular
-   visitors — it appears only on URLs carrying `?waiter24_demo=1`. The parameter
-   is remembered for the session and re-applied to in-chat links, so the chat
-   stays visible while clicking around. Useful for showing the assistant to a
-   client before going live.
+   visitors: the `<script>` tag is not rendered at all unless the URL carries
+   `?waiter24_demo=1`, so a normal shopper never loads the widget. Links the
+   assistant opens keep the parameter, so the chat survives in-chat navigation;
+   a page opened without it has no chat. Useful for showing the assistant to a
+   client before going live. Works with FPC/Varnish — the demo URL has its own
+   cache entry.
 
 Multi-store: set a different Import Token per store view to feed several Waiter24
 tenants from one Magento instance — the cron exports each configured store.

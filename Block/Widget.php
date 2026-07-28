@@ -19,9 +19,25 @@ class Widget extends Template
         parent::__construct($context, $data);
     }
 
+    /**
+     * Demo mode is enforced here, on the server: the script tag is simply not
+     * rendered unless the visitor arrived on a demo link, so regular shoppers
+     * never receive the widget at all. Hiding it in the browser instead — which
+     * is what this used to do — is defeated by anything that touches the markup
+     * on the way out, from a full-page cache warmed before the toggle was
+     * flipped to a JS optimizer that strips data attributes.
+     *
+     * Safe under FPC/Varnish: the demo URL carries a query string, and Magento
+     * keys its page cache on the full URI, so the demo page and the plain page
+     * are different cache entries.
+     */
     public function isEnabled(): bool
     {
-        return $this->config->isWidgetEnabled() && $this->getWidgetKey() !== '';
+        if (! $this->config->isWidgetEnabled() || $this->getWidgetKey() === '') {
+            return false;
+        }
+
+        return ! $this->isDemoMode() || $this->getRequest()->getParam($this->getDemoParam()) !== null;
     }
 
     public function getWidgetKey(): string

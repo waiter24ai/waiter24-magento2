@@ -44,6 +44,13 @@
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Export</label>
 
+                <field id="auto_sync" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Automatic Sync</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>When enabled, the daily cron pushes the catalog on its own. Off (the default on a new install) means the catalog is sent only when you press Export Now.</comment>
+                </field>
+
                 <field id="simple_stock_mode" translate="label comment" type="select" sortOrder="20"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Simple Stock Mode</label>

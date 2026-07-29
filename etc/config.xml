@@ -10,6 +10,12 @@
                 <widget_url>https://waiter24.ai/widget.js</widget_url>
             </general>
             <export>
+                <!-- Off by default: a store that has just installed the module must
+                     not start pushing a catalog nobody asked it to push. Stores
+                     configured before 1.2.0 are switched on explicitly by
+                     Setup\Patch\Data\EnableAutoSyncForConfiguredStores, so their
+                     daily sync survives the upgrade. -->
+                <auto_sync>0</auto_sync>
                 <simple_stock_mode>1</simple_stock_mode>
             </export>
             <widget>

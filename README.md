@@ -21,8 +21,13 @@ schema (see [`examples/menu-import-sample.json`](examples/menu-import-sample.jso
   (`VISIBILITY_BOTH | IN_CATALOG | IN_SEARCH`) in the store view being pushed.
   Configurable variants carry "Not Visible Individually", so they are excluded —
   the assistant must not offer a product whose page does not exist.
-- **Sync**: a daily cron (`waiter24_export_menu`, 03:00) pushes the catalog; the
-  admin can push anytime with **Export Now**. The catalogue goes out in slices of
+- **Sync**: **Export Now** pushes on demand, and a daily cron
+  (`waiter24_export_menu`, 03:00) pushes on its own **once
+  `export/auto_sync` is switched on** — it is off by default, so a store that has
+  only just installed the module never exports until someone asks it to. Stores
+  configured before 1.2.0 are switched on explicitly by
+  `Setup\Patch\Data\EnableAutoSyncForConfiguredStores` (any scope with a token
+  saved), so their nightly push survives the upgrade. The catalogue goes out in slices of
   200 products that share one `import_session`, ending with a `final` call —
   neither side holds the whole catalogue, and only that closing call hides what
   the store no longer sells, so an export that dies half way leaves the previous
@@ -93,10 +98,13 @@ installers — no manual copy needed.)
 3. **Export → Simple Stock Mode** — leave on to always export products as
    available, or off to respect real stock.
 4. Press **Export → Export Now** to push the catalog immediately and verify the
-   connection. After that the daily cron keeps it in sync.
-5. **Chat Widget → Enable Chat Widget = Yes** to show the assistant on the
+   connection. Nothing is exported before this — the module does not push a
+   catalog on its own until told to.
+5. **Export → Automatic Sync = Yes** once you are happy with the result: the
+   daily cron then keeps the catalog in sync without you.
+6. **Chat Widget → Enable Chat Widget = Yes** to show the assistant on the
    storefront.
-6. *(optional)* **Chat Widget → Demo Mode = Yes** hides the chat from regular
+7. *(optional)* **Chat Widget → Demo Mode = Yes** hides the chat from regular
    visitors: the `<script>` tag is not rendered at all unless the URL carries
    `?waiter24_demo=1`, so a normal shopper never loads the widget. Links the
    assistant opens keep the parameter, so the chat survives in-chat navigation;
@@ -105,7 +113,8 @@ installers — no manual copy needed.)
    cache entry.
 
 Multi-store: set a different Import Token per store view to feed several Waiter24
-tenants from one Magento instance — the cron exports each configured store.
+tenants from one Magento instance — the cron exports each store that has a token
+**and** Automatic Sync on.
 
 > **URLs.** `etc/config.xml` ships production defaults (`https://waiter24.ai/…`)
 > for the endpoint and widget URLs. To point a store at another Waiter24 instance
@@ -123,6 +132,7 @@ Waiter24/Export/
   etc/frontend/routes.xml
   Model/Config.php, Model/MenuExporter.php
   Cron/Export.php
+  Setup/Patch/Data/EnableAutoSyncForConfiguredStores.php
   Controller/Adminhtml/Export/Run.php
   Controller/Cart/Add.php, Controller/Cart/Index.php
   Block/Widget.php, Block/Adminhtml/System/Config/RunButton.php

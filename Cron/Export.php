@@ -8,8 +8,10 @@ use Waiter24\Export\Model\Config;
 use Waiter24\Export\Model\MenuExporter;
 
 /**
- * Scheduled catalog push. Runs per store that has a token configured, so a
- * multi-store Magento instance can feed several Waiter24 tenants.
+ * Scheduled catalog push. Runs per store that has a token configured **and
+ * automatic sync switched on**, so a multi-store Magento instance can feed
+ * several Waiter24 tenants — and a store that only ever wanted to press Export
+ * Now is never exported behind its owner's back.
  */
 class Export
 {
@@ -25,7 +27,7 @@ class Export
         foreach ($this->storeManager->getStores() as $store) {
             $storeId = (int) $store->getId();
 
-            if ($this->config->getImportToken($storeId) === '') {
+            if ($this->config->getImportToken($storeId) === '' || ! $this->config->isAutoSyncEnabled($storeId)) {
                 continue;
             }
 

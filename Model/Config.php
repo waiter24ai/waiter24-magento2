@@ -50,6 +50,14 @@ class Config
         return (string) $this->value('general/widget_url', $storeId);
     }
 
+    /**
+     * Is the store allowed to export on the cron schedule, without being asked?
+     */
+    public function isAutoSyncEnabled(?int $storeId = null): bool
+    {
+        return $this->flag('export/auto_sync', $storeId);
+    }
+
     public function isSimpleStockMode(?int $storeId = null): bool
     {
         return $this->flag('export/simple_stock_mode', $storeId);

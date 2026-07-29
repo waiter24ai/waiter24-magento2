@@ -23,6 +23,9 @@ use Psr\Log\LoggerInterface;
  */
 class MenuExporter
 {
+    /** Edge length of the exported product photo, in pixels. */
+    private const PHOTO_SIZE = 150;
+
     public function __construct(
         private readonly Config $config,
         private readonly CollectionFactory $productCollectionFactory,
@@ -226,18 +229,21 @@ class MenuExporter
         $image     = $product->getImage();
         $photoUrl  = ($image && $image !== 'no_selection') ? $mediaUrl . $image : null;
 
-        // Prefer a resized ~400px thumbnail over the full-size original — the
-        // widget renders dish photos small. Guarded on every side so the export
-        // never breaks or emits a bad URL: an exception, a placeholder (no
-        // /cache/ segment), or a wrong-host URL (the helper uses the current
-        // store, which in an admin/CLI export may differ from $storeId) all fall
-        // back to the original media URL.
+        // Prefer a resized 150px thumbnail over the full-size original — the
+        // widget renders dish photos small, and 150px is what every Waiter24
+        // integration ships (matching the WooCommerce plugin's 'thumbnail').
+        // Magento generates the cached copy on demand, so no store has to have
+        // made one first. Guarded on every side so the export never breaks or
+        // emits a bad URL: an exception, a placeholder (no /cache/ segment), or
+        // a wrong-host URL (the helper uses the current store, which in an
+        // admin/CLI export may differ from $storeId) all fall back to the
+        // original media URL.
         if ($photoUrl !== null) {
             try {
                 $thumb = $this->imageHelper
                     ->init($product, 'product_thumbnail_image')
                     ->setImageFile($image)
-                    ->resize(400)
+                    ->resize(self::PHOTO_SIZE, self::PHOTO_SIZE)
                     ->getUrl();
                 if (is_string($thumb) && $thumb !== ''
                     && str_contains($thumb, '/cache/')

@@ -2,10 +2,17 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="default">
-        <!-- Daily reconciliation push. Real-time updates come from product saves
-             (manual "Export Now" or an observer if enabled); this is the safety net. -->
+        <!-- Daily reconciliation push. Real-time updates come from the product-save
+             and stock observers below; this is the safety net for anything they miss
+             (a hard delete, a direct DB write with no observer firing). -->
         <job name="waiter24_export_menu" instance="Waiter24\Export\Cron\Export" method="execute">
             <schedule>0 3 * * *</schedule>
+        </job>
+        <!-- Debounced flush of the realtime queue (see Observer/MarkProductDirty,
+             Observer/MarkStockItemDirty). Every minute so a price/stock/visibility
+             change reaches Waiter24 within roughly a minute of being saved. -->
+        <job name="waiter24_realtime_push" instance="Waiter24\Export\Cron\RealtimePush" method="execute">
+            <schedule>* * * * *</schedule>
         </job>
     </group>
 </config>

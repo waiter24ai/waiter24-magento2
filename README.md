@@ -32,6 +32,15 @@ schema (see [`examples/menu-import-sample.json`](examples/menu-import-sample.jso
   neither side holds the whole catalogue, and only that closing call hides what
   the store no longer sells, so an export that dies half way leaves the previous
   menu alone.
+- **Realtime sync** (1.3.0+, rides the same `auto_sync` switch): saving a product
+  (`catalog_product_save_after`) or its stock (`cataloginventory_stock_item_save_after`)
+  queues it for a debounced push, flushed by a per-minute cron
+  (`waiter24_realtime_push`) that reuses the same per-store token/auto_sync gate
+  as the daily export. A product that just became disabled, "Not Visible
+  Individually", or unassigned from the store's website is pushed as
+  `is_available: false` rather than silently dropped — `upsert` never hides an
+  absent item on its own. A hard delete has nothing left to re-read at flush
+  time, so it is only picked up by the next scheduled export.
 - **Widget**: a frontend block injects `widget.js` (with the public widget key)
   before `</body>` on every storefront page when enabled — except in Demo Mode,
   where the tag is rendered only on requests carrying `?waiter24_demo=1`.

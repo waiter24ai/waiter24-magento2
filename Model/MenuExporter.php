@@ -2,6 +2,7 @@
 
 namespace Waiter24\Export\Model;
 
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
@@ -35,6 +36,7 @@ class MenuExporter
         private readonly Json $json,
         private readonly LoggerInterface $logger,
         private readonly ImageHelper $imageHelper,
+        private readonly ProductRepositoryInterface $productRepository,
     ) {}
 
     /**
@@ -96,6 +98,79 @@ class MenuExporter
             'import_session' => $session,
             'final'          => true,
         ]);
+    }
+
+    /**
+     * Push a small, explicit set of products — the realtime observers'
+     * debounced queue, not a catalogue slice. A product no longer reachable in
+     * this store (disabled, "Not Visible Individually", unassigned from the
+     * store's website) is pushed as unavailable rather than skipped: `upsert`
+     * never hides an absent item, only a full session close does (see run()).
+     * A product this store never carried is skipped outright — pushing it
+     * anyway would create a phantom hidden dish in a tenant's menu that never
+     * had it.
+     *
+     * @param int[] $productIds
+     * @return array<string,mixed>
+     */
+    public function pushProducts(array $productIds, ?int $storeId = null): array
+    {
+        $token    = $this->config->getImportToken($storeId);
+        $endpoint = $this->config->getEndpointUrl($storeId);
+
+        if ($token === '' || $endpoint === '') {
+            throw new LocalizedException(__('Waiter24: import token or endpoint URL is not configured.'));
+        }
+
+        $simpleStock = $this->config->isSimpleStockMode($storeId);
+        $currency    = $this->storeManager->getStore($storeId)->getCurrentCurrencyCode();
+        $mediaUrl    = $this->storeManager->getStore($storeId)
+            ->getBaseUrl(UrlInterface::URL_TYPE_MEDIA) . 'catalog/product';
+
+        $items = [];
+
+        foreach ($productIds as $productId) {
+            try {
+                $product = $this->productRepository->getById($productId, false, $storeId);
+            } catch (\Throwable) {
+                // Hard-deleted, or never existed by the time the queue flushed.
+                // Nothing left here to build a payload from — the scheduled
+                // export is what reconciles an actual deletion.
+                continue;
+            }
+
+            if (! in_array($storeId, array_map('intval', (array) $product->getStoreIds()), true)) {
+                continue;
+            }
+
+            if ($this->isPubliclyVisible($product)) {
+                $items[] = $this->mapProduct($product, null, $currency, $mediaUrl, $simpleStock);
+            } else {
+                $items[] = [
+                    'external_id'  => (string) $product->getId(),
+                    'name'         => (string) $product->getName(),
+                    'is_available' => false,
+                ];
+            }
+        }
+
+        if ($items === []) {
+            return ['ok' => true, 'items' => 0];
+        }
+
+        // Explicit upsert: the import endpoint defaults to `replace` when
+        // `mode` is omitted, which would hide the tenant's entire menu but
+        // for these items.
+        return $this->push($endpoint, $token, [
+            'items' => $items,
+            'mode'  => 'upsert',
+        ]);
+    }
+
+    private function isPubliclyVisible(Product $product): bool
+    {
+        return (int) $product->getStatus() === Product::STATUS_ENABLED
+            && (int) $product->getVisibility() !== Visibility::VISIBILITY_NOT_VISIBLE;
     }
 
     /**
@@ -211,9 +286,14 @@ class MenuExporter
     }
 
     /**
+     * @param ?int $sortOrder Row position within the full-catalogue export.
+     *                        Omitted (null) for a realtime single-product push,
+     *                        which must not overwrite the position the last
+     *                        full export assigned — the import endpoint leaves
+     *                        a key it never receives untouched.
      * @return array<string,mixed>
      */
-    private function mapProduct(Product $product, int $sortOrder, string $currency, string $mediaUrl, bool $simpleStock): array
+    private function mapProduct(Product $product, ?int $sortOrder, string $currency, string $mediaUrl, bool $simpleStock): array
     {
         [$category, $subcategory] = $this->resolveCategories($product);
 
@@ -269,8 +349,11 @@ class MenuExporter
             'photo_url'   => $photoUrl,
             'product_url' => $product->getProductUrl(),
             'is_available' => $available,
-            'sort_order'  => $sortOrder,
         ];
+
+        if ($sortOrder !== null) {
+            $item['sort_order'] = $sortOrder;
+        }
 
         $variations = $this->resolveVariations($product);
         if ($variations !== []) {

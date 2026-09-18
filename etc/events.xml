@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <!-- Hard deletes are deliberately not observed here: Magento has no trash/
+         soft-delete state to re-read at flush time (unlike disabling a
+         product, which the save-after observer below already catches), so a
+         deleted product is only reconciled by the next scheduled export. -->
+    <event name="catalog_product_save_after">
+        <observer name="waiter24_realtime_product_saved" instance="Waiter24\Export\Observer\MarkProductDirty" />
+    </event>
+    <event name="cataloginventory_stock_item_save_after">
+        <observer name="waiter24_realtime_stock_saved" instance="Waiter24\Export\Observer\MarkStockItemDirty" />
+    </event>
+</config>

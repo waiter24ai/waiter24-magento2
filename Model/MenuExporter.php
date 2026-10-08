@@ -8,6 +8,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableResource;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -37,19 +38,20 @@ class MenuExporter
         private readonly LoggerInterface $logger,
         private readonly ImageHelper $imageHelper,
         private readonly ProductRepositoryInterface $productRepository,
+        private readonly ConfigurableResource $configurableResource,
     ) {}
 
-    /**
-     * Build + push. Returns the decoded server response on success.
-     *
-     * @throws LocalizedException when not configured or the push fails.
-     */
     /**
      * Products per push. A catalogue is sent in slices so that neither this
      * process nor the import endpoint ever has to hold all of it at once.
      */
     private const BATCH_SIZE = 200;
 
+    /**
+     * Build + push. Returns the decoded server response on success.
+     *
+     * @throws LocalizedException when not configured or the push fails.
+     */
     public function run(?int $storeId = null): array
     {
         $token    = $this->config->getImportToken($storeId);
@@ -127,6 +129,16 @@ class MenuExporter
         $mediaUrl    = $this->storeManager->getStore($storeId)
             ->getBaseUrl(UrlInterface::URL_TYPE_MEDIA) . 'catalog/product';
 
+        // A configurable's child ("Not Visible Individually") is never a menu
+        // entry of its own — it rides its parent's variations[]. Its save or
+        // stock flip must therefore re-send the parent, not push the child as a
+        // phantom unavailable dish into the tenant's menu.
+        $parentsOf = [];
+        foreach ($productIds as $productId) {
+            $parentsOf[$productId] = array_map('intval', (array) $this->configurableResource->getParentIdsByChild($productId));
+        }
+        $productIds = array_values(array_unique(array_merge($productIds, ...array_values($parentsOf))));
+
         $items = [];
 
         foreach ($productIds as $productId) {
@@ -145,7 +157,7 @@ class MenuExporter
 
             if ($this->isPubliclyVisible($product)) {
                 $items[] = $this->mapProduct($product, null, $currency, $mediaUrl, $simpleStock);
-            } else {
+            } elseif (($parentsOf[$productId] ?? []) === []) {
                 $items[] = [
                     'external_id'  => (string) $product->getId(),
                     'name'         => (string) $product->getName(),
@@ -364,8 +376,13 @@ class MenuExporter
     }
 
     /**
-     * Map the product's category tree: shallowest category → category,
-     * the next level down → subcategory.
+     * Map the product's category tree: shallowest category → category, one of
+     * its own children → subcategory.
+     *
+     * Levels 0–1 are the tree root and a store's root category ("Default
+     * Category") — never a menu section, even when a product is assigned to
+     * one. And the subcategory must actually sit under the category: a product
+     * in "Pizza" and in "Drinks › Cola" is not a "Pizza › Cola".
      *
      * @return array{0: ?string, 1: ?string}
      */
@@ -374,12 +391,14 @@ class MenuExporter
         try {
             $categories = $product->getCategoryCollection()
                 ->addAttributeToSelect(['name', 'level'])
+                ->addAttributeToFilter('level', ['gteq' => 2])
                 ->setOrder('level', 'ASC');
         } catch (\Throwable) {
             return [null, null];
         }
 
-        $category = null;
+        $category    = null;
+        $categoryId  = null;
         $subcategory = null;
 
         foreach ($categories as $cat) {
@@ -388,8 +407,9 @@ class MenuExporter
                 continue;
             }
             if ($category === null) {
-                $category = $name;
-            } elseif ($subcategory === null) {
+                $category   = $name;
+                $categoryId = (int) $cat->getId();
+            } elseif ((int) $cat->getParentId() === $categoryId) {
                 $subcategory = $name;
                 break;
             }
